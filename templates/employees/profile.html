@@ -1,0 +1,127 @@
+{% extends 'base/base.html' %}
+{% block title %}My Profile – DAYFLOW{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+{% block content %}
+
+<div class="row g-4">
+
+  <!-- Left: Avatar + summary -->
+  <div class="col-lg-4">
+    <div class="card text-center mb-4">
+      <div class="card-body py-4 px-3">
+        {% if profile.profile_picture %}
+          <img src="{{ profile.profile_picture.url }}" class="rounded-circle mb-3"
+               style="width:88px;height:88px;object-fit:cover;border:3px solid #e2e8f0" alt="Profile">
+        {% else %}
+          <div class="mx-auto rounded-circle bg-primary d-flex align-items-center justify-content-center text-white fw-bold mb-3"
+               style="width:88px;height:88px;font-size:2rem;border:3px solid #e2e8f0">
+            {{ profile.full_name|first|upper }}
+          </div>
+        {% endif %}
+        <h5 class="fw-bold mb-1">{{ profile.full_name }}</h5>
+        <p class="text-muted small mb-1">{{ profile.designation.title|default:"—" }}</p>
+        <p class="text-muted small mb-3">{{ profile.department.name|default:"—" }}</p>
+        {% if profile.employment_status == 'active' %}<span class="badge bg-success-subtle text-success">Active</span>
+        {% elif profile.employment_status == 'probation' %}<span class="badge bg-warning-subtle text-warning">Probation</span>
+        {% elif profile.employment_status == 'on_leave' %}<span class="badge bg-info-subtle text-info">On Leave</span>
+        {% elif profile.employment_status == 'inactive' %}<span class="badge bg-secondary-subtle text-secondary">Inactive</span>
+        {% elif profile.employment_status == 'terminated' %}<span class="badge bg-danger-subtle text-danger">Terminated</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Job details readonly card -->
+    <div class="card">
+      <div class="card-header fw-semibold"><i class="fa-solid fa-briefcase me-2 text-primary"></i>Job Details</div>
+      <div class="card-body">
+        <dl class="row small mb-0">
+          <dt class="col-5 text-muted">Employee ID</dt>
+          <dd class="col-7"><code>{{ profile.user.employee_id }}</code></dd>
+
+          <dt class="col-5 text-muted">Email</dt>
+          <dd class="col-7 text-break">{{ profile.user.email }}</dd>
+
+          <dt class="col-5 text-muted">Department</dt>
+          <dd class="col-7">{{ profile.department.name|default:"—" }}</dd>
+
+          <dt class="col-5 text-muted">Designation</dt>
+          <dd class="col-7">{{ profile.designation.title|default:"—" }}</dd>
+
+          <dt class="col-5 text-muted">Joining Date</dt>
+          <dd class="col-7">{{ profile.joining_date|date:"d M Y"|default:"—" }}</dd>
+
+          <dt class="col-5 text-muted">Emp. Type</dt>
+          <dd class="col-7">{{ profile.get_employment_type_display|default:"—" }}</dd>
+
+          <dt class="col-5 text-muted">Role</dt>
+          <dd class="col-7">{{ profile.user.get_role_display }}</dd>
+
+          {% if profile.manager %}
+          <dt class="col-5 text-muted">Manager</dt>
+          <dd class="col-7">{{ profile.manager.full_name }}</dd>
+          {% endif %}
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Editable form -->
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header fw-semibold">
+        <i class="fa-solid fa-user-pen me-2 text-primary"></i>Edit Personal Information
+      </div>
+      <div class="card-body p-4">
+        <form method="post" enctype="multipart/form-data" novalidate>
+          {% csrf_token %}
+          <div class="row g-3">
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">First Name</label>
+              <input type="text" class="form-control" value="{{ profile.first_name }}" disabled>
+              <div class="form-text">Contact Admin to update name.</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Last Name</label>
+              <input type="text" class="form-control" value="{{ profile.last_name }}" disabled>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Phone Number</label>
+              <input type="text" name="phone" class="form-control" value="{{ profile.phone }}"
+                     placeholder="+1 234 567 8900">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Date of Birth</label>
+              <input type="text" class="form-control" value="{{ profile.date_of_birth|default:'' }}" disabled>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label fw-semibold">Address</label>
+              <textarea name="address" class="form-control" rows="3"
+                        placeholder="Your home address">{{ profile.address }}</textarea>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Update Profile Picture</label>
+              <input type="file" name="profile_picture" class="form-control" accept="image/*">
+              {% if profile.profile_picture %}
+              <div class="form-text">Current photo is set. Upload to replace.</div>
+              {% endif %}
+            </div>
+
+          </div>
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-floppy-disk me-1"></i>Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

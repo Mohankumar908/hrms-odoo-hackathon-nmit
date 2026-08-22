@@ -1,0 +1,152 @@
+{% extends 'base/base.html' %}
+{% block title %}Tasks – DAYFLOW{% endblock %}
+{% block page_title %}Tasks{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h5 class="mb-0 fw-semibold">
+    {% if request.user.role in 'admin,hr' %}All Tasks{% else %}My Tasks{% endif %}
+    <span class="badge bg-primary-subtle text-primary ms-2" style="font-size:.75rem">{{ tasks|length }}</span>
+  </h5>
+  {% if request.user.role == 'admin' or request.user.role == 'hr' %}
+  <a href="{% url 'tasks:task_create' %}" class="btn btn-primary btn-sm">
+    <i class="fa-solid fa-plus me-1"></i>New Task
+  </a>
+  {% endif %}
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body py-3">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-sm-3">
+        <select name="status" class="form-select form-select-sm">
+          <option value="">All Statuses</option>
+          {% for val, label in status_choices %}
+            <option value="{{ val }}" {% if filter_status == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-sm-3">
+        <select name="priority" class="form-select form-select-sm">
+          <option value="">All Priorities</option>
+          {% for val, label in priority_choices %}
+            <option value="{{ val }}" {% if filter_priority == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-sm-3">
+        <select name="project" class="form-select form-select-sm">
+          <option value="">All Projects</option>
+          {% for p in projects %}
+            <option value="{{ p.pk }}" {% if filter_project == p.pk|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-sm btn-outline-primary">
+          <i class="fa-solid fa-filter me-1"></i>Filter
+        </button>
+        <a href="{% url 'tasks:task_list' %}" class="btn btn-sm btn-outline-secondary ms-1">Clear</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    {% if tasks %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Task</th>
+            <th>Project</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>Progress</th>
+            <th>Deadline</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for task in tasks %}
+          <tr>
+            <td>
+              <div class="fw-semibold" style="font-size:.875rem">{{ task.title }}</div>
+              {% if task.assignees.exists %}
+                <div class="text-muted" style="font-size:.75rem">
+                  {% for a in task.assignees.all|slice:":2" %}{{ a.full_name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                  {% if task.assignees.count > 2 %} +{{ task.assignees.count|add:"-2" }} more{% endif %}
+                </div>
+              {% endif %}
+            </td>
+            <td><span class="text-muted small">{{ task.project.name }}</span></td>
+            <td>
+              {% if task.priority == 'critical' %}
+                <span class="badge bg-danger">Critical</span>
+              {% elif task.priority == 'high' %}
+                <span class="badge bg-warning text-dark">High</span>
+              {% elif task.priority == 'medium' %}
+                <span class="badge bg-info text-white">Medium</span>
+              {% else %}
+                <span class="badge bg-secondary">Low</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if task.status == 'completed' %}<span class="badge bg-success-subtle text-success">Completed</span>
+              {% elif task.status == 'in_progress' %}<span class="badge bg-primary-subtle text-primary">In Progress</span>
+              {% elif task.status == 'delayed' %}<span class="badge bg-danger-subtle text-danger">Delayed</span>
+              {% elif task.status == 'on_hold' %}<span class="badge bg-warning-subtle text-warning">On Hold</span>
+              {% else %}<span class="badge bg-secondary-subtle text-secondary">Not Started</span>
+              {% endif %}
+            </td>
+            <td style="min-width:120px">
+              <div class="d-flex align-items-center gap-2">
+                <div class="progress flex-grow-1" style="height:6px">
+                  <div class="progress-bar bg-primary" style="width:{{ task.progress }}%"></div>
+                </div>
+                <small class="text-muted">{{ task.progress }}%</small>
+              </div>
+            </td>
+            <td>
+              {% if task.deadline %}
+                <span class="small {% if task.status != 'completed' %}text-danger{% else %}text-muted{% endif %}">
+                  {{ task.deadline|date:"d M Y" }}
+                </span>
+              {% else %}
+                <span class="text-muted small">—</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <a href="{% url 'tasks:task_detail' task.pk %}" class="btn btn-sm btn-outline-secondary" title="View">
+                <i class="fa-solid fa-eye"></i>
+              </a>
+              <a href="{% url 'tasks:task_edit' task.pk %}" class="btn btn-sm btn-outline-primary ms-1" title="Edit">
+                <i class="fa-solid fa-pen"></i>
+              </a>
+              {% if request.user.role == 'admin' or request.user.role == 'hr' %}
+              <a href="{% url 'tasks:task_delete' task.pk %}" class="btn btn-sm btn-outline-danger ms-1" title="Delete">
+                <i class="fa-solid fa-trash"></i>
+              </a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="fa-solid fa-list-check fa-2x mb-3 d-block opacity-25"></i>
+      <p class="mb-2">No tasks found.</p>
+      {% if request.user.role == 'admin' or request.user.role == 'hr' %}
+      <a href="{% url 'tasks:task_create' %}" class="btn btn-sm btn-primary">
+        <i class="fa-solid fa-plus me-1"></i>Create First Task
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

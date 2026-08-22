@@ -1,0 +1,20 @@
+{% extends "base/base.html" %}
+{% block title %}Delete Employee – DAYFLOW{% endblock %}
+{% block page_title %}Delete Employee{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-md-5">
+  <div class="card border-danger">
+    <div class="card-header bg-danger text-white fw-semibold"><i class="fa-solid fa-triangle-exclamation me-2"></i>Confirm Deletion</div>
+    <div class="card-body text-center py-4">
+      <p>Permanently delete this employee?</p>
+      <p class="fw-bold fs-5 mb-0">{{ profile.full_name }}</p>
+      <p class="text-muted small">{{ profile.user.employee_id }} · {{ profile.user.email }}</p>
+      <p class="text-danger small mt-2">This will delete their account and all associated data.</p>
+      <form method="post" class="d-flex gap-2 justify-content-center mt-3">{% csrf_token %}
+        <a href="{% url 'employees:employee_list' %}" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-danger"><i class="fa-solid fa-trash me-1"></i>Delete</button>
+      </form>
+    </div>
+  </div>
+</div></div>
+{% endblock %}

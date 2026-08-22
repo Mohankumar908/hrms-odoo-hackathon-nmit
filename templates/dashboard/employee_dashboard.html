@@ -1,0 +1,193 @@
+{% extends 'base/base.html' %}
+{% block title %}My Dashboard – DAYFLOW{% endblock %}
+{% block page_title %}My Dashboard{% endblock %}
+{% block content %}
+
+<!-- Greeting -->
+<div class="dash-greeting mb-4">
+  <div>
+    <h4 class="fw-bold mb-1">
+      {% now "H" as hour %}
+      {% if hour < "12" %}Good morning{% elif hour < "17" %}Good afternoon{% else %}Good evening{% endif %},
+      {{ request.user.full_name }} 👋
+    </h4>
+    <p class="text-muted mb-0">{{ today|date:"l, d F Y" }}</p>
+  </div>
+  <div class="d-flex gap-2 flex-wrap mt-3 mt-sm-0">
+    <form method="post" action="{% url 'attendance:checkin' %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-success px-4"
+        {% if today_attendance and today_attendance.check_in %}disabled{% endif %}>
+        <i class="fa-solid fa-right-to-bracket me-2"></i>Check In
+      </button>
+    </form>
+    <form method="post" action="{% url 'attendance:checkout' %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-warning px-4"
+        {% if not today_attendance or not today_attendance.check_in or today_attendance.check_out %}disabled{% endif %}>
+        <i class="fa-solid fa-right-from-bracket me-2"></i>Check Out
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Check-in status bar -->
+<div class="checkin-bar mb-4">
+  <i class="fa-solid fa-circle-info text-primary me-2"></i>
+  {% if today_attendance and today_attendance.check_in %}
+    Checked in at <strong>{{ today_attendance.check_in|time:"H:i" }}</strong>
+    {% if today_attendance.check_out %}
+      &nbsp;·&nbsp; Checked out at <strong>{{ today_attendance.check_out|time:"H:i" }}</strong>
+      &nbsp;·&nbsp; <strong>{{ today_attendance.working_hours }}h</strong> worked
+    {% else %}
+      &nbsp;·&nbsp; Status: <strong>{{ today_attendance.status|title }}</strong>
+    {% endif %}
+    {% if today_attendance.is_late %}&nbsp;<span class="badge bg-warning text-dark">Late</span>{% endif %}
+  {% else %}
+    You haven't checked in yet today.
+  {% endif %}
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">
+    <div class="card kpi-card">
+      <div class="card-body">
+        <div class="kpi-icon bg-primary-subtle text-primary"><i class="fa-solid fa-clock"></i></div>
+        <div class="kpi-value">
+          {% if today_attendance %}{{ today_attendance.status|title }}{% else %}—{% endif %}
+        </div>
+        <div class="kpi-label">Today's Status</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="card kpi-card">
+      <div class="card-body">
+        <div class="kpi-icon bg-success-subtle text-success"><i class="fa-solid fa-hourglass-half"></i></div>
+        <div class="kpi-value">
+          {% if today_attendance and today_attendance.working_hours %}{{ today_attendance.working_hours }}h{% else %}0h{% endif %}
+        </div>
+        <div class="kpi-label">Hours Today</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="card kpi-card">
+      <div class="card-body">
+        <div class="kpi-icon bg-warning-subtle text-warning"><i class="fa-solid fa-calendar-xmark"></i></div>
+        <div class="kpi-value">{{ pending_leaves }}</div>
+        <div class="kpi-label">Pending Leaves</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="card kpi-card">
+      <div class="card-body">
+        <div class="kpi-icon bg-info-subtle text-info"><i class="fa-solid fa-list-check"></i></div>
+        <div class="kpi-value">{{ my_tasks }}</div>
+        <div class="kpi-label">Active Tasks</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main content -->
+<div class="row g-4">
+
+  <!-- Quick actions -->
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header fw-semibold"><i class="fa-solid fa-bolt text-warning me-2"></i>Quick Actions</div>
+      <div class="card-body">
+        <div class="d-flex flex-column gap-2">
+          <a href="{% url 'leave_management:apply_leave' %}" class="quick-action">
+            <i class="fa-solid fa-calendar-plus text-primary"></i>Apply for Leave
+          </a>
+          <a href="{% url 'work_updates:create' %}" class="quick-action">
+            <i class="fa-solid fa-pen-to-square text-success"></i>Submit Work Update
+          </a>
+          <a href="{% url 'tasks:task_list' %}" class="quick-action">
+            <i class="fa-solid fa-list-check text-warning"></i>View My Tasks
+          </a>
+          <a href="{% url 'attendance:attendance' %}" class="quick-action">
+            <i class="fa-solid fa-clock-rotate-left text-info"></i>Attendance History
+          </a>
+          <a href="{% url 'payroll:payroll' %}" class="quick-action">
+            <i class="fa-solid fa-money-bill-wave text-success"></i>My Payslips
+          </a>
+          <a href="{% url 'employees:profile' %}" class="quick-action">
+            <i class="fa-solid fa-user text-secondary"></i>My Profile
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notifications -->
+  <div class="col-md-8">
+    <div class="card h-100">
+      <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+        <span><i class="fa-solid fa-bell text-primary me-2"></i>Recent Notifications</span>
+        <a href="{% url 'notifications:list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+      </div>
+      <div class="card-body p-0">
+        {% if notifications %}
+        <ul class="list-group list-group-flush">
+          {% for n in notifications %}
+          <li class="list-group-item px-4 py-3">
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="d-flex gap-3 align-items-start">
+                <div class="notif-dot-icon bg-primary-subtle text-primary">
+                  <i class="fa-solid fa-circle-info"></i>
+                </div>
+                <div>
+                  <div class="fw-semibold" style="font-size:.875rem">{{ n.title }}</div>
+                  <div class="text-muted" style="font-size:.8rem">{{ n.message|truncatechars:90 }}</div>
+                </div>
+              </div>
+              <small class="text-muted text-nowrap ms-3">{{ n.created_at|timesince }} ago</small>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="fa-solid fa-bell-slash fa-2x mb-3 d-block opacity-25"></i>
+          <p class="small mb-0">No new notifications.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<style>
+.dash-greeting {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  flex-wrap: wrap; gap: 16px;
+  background: linear-gradient(135deg, #eef2ff, #f0fdf4);
+  border: 1px solid #e0e7ff;
+  border-radius: 14px; padding: 24px 28px;
+}
+.checkin-bar {
+  background: #f8fafc; border: 1px solid #e2e8f0;
+  border-radius: 10px; padding: 10px 18px; font-size: .875rem; color: #374151;
+}
+.notif-dot-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: .85rem;
+}
+.quick-action {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 14px; border-radius: 10px;
+  background: #f8fafc; border: 1px solid #e2e8f0;
+  text-decoration: none; color: #374151; font-size: .875rem; font-weight: 500;
+  transition: all .15s;
+}
+.quick-action:hover { background: #eef2ff; border-color: #c7d2fe; color: #4338ca; }
+.quick-action i { font-size: 1rem; width: 20px; text-align: center; }
+</style>
+{% endblock %}

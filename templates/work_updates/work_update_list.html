@@ -1,0 +1,107 @@
+{% extends 'base/base.html' %}
+{% block title %}Work Updates - DAYFLOW{% endblock %}
+{% block page_title %}Daily Work Updates{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header">Submit Today's Update</div>
+      <div class="card-body">
+        <form id="workUpdateForm">{% csrf_token %}
+          <div class="mb-3"><label class="form-label">Project</label>
+            <select class="form-select" id="wuProject" required></select></div>
+          <div class="mb-3"><label class="form-label">Task (optional)</label>
+            <select class="form-select" id="wuTask"><option value="">— Select Task —</option></select></div>
+          <div class="mb-3"><label class="form-label">Work Completed</label>
+            <textarea class="form-control" id="wuCompleted" rows="3" required></textarea></div>
+          <div class="mb-3"><label class="form-label">Work In Progress</label>
+            <textarea class="form-control" id="wuInProgress" rows="2"></textarea></div>
+          <div class="mb-3"><label class="form-label">Pending Work</label>
+            <textarea class="form-control" id="wuPending" rows="2"></textarea></div>
+          <div class="mb-3"><label class="form-label">Blockers / Issues</label>
+            <textarea class="form-control" id="wuBlockers" rows="2"></textarea></div>
+          <div class="row g-2 mb-3">
+            <div class="col"><label class="form-label">Hours Worked</label>
+              <input type="number" class="form-control" id="wuHours" step="0.5" min="0" max="24"></div>
+            <div class="col"><label class="form-label">Progress %</label>
+              <input type="number" class="form-control" id="wuProgress" min="0" max="100"></div>
+          </div>
+          <div class="mb-3"><label class="form-label">Remarks</label>
+            <input type="text" class="form-control" id="wuRemarks"></div>
+          <button type="button" class="btn btn-primary w-100" onclick="submitUpdate()">Submit Update</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header">{% if user.role in "admin,hr" %}All Updates{% else %}My Updates{% endif %}</div>
+      <div class="card-body p-0">
+        <ul class="list-group list-group-flush">
+          {% for u in updates %}
+          <li class="list-group-item">
+            <div class="d-flex justify-content-between mb-1">
+              <div>
+                <span class="fw-semibold">{{ u.employee.full_name }}</span>
+                <span class="text-muted small ms-2">{{ u.project.name }}</span>
+                {% if u.task %}<span class="badge bg-light text-dark ms-1">{{ u.task.title|truncatechars:20 }}</span>{% endif %}
+              </div>
+              <span class="text-muted small">{{ u.date }}</span>
+            </div>
+            <p class="small mb-1"><strong>Done:</strong> {{ u.work_completed|truncatechars:100 }}</p>
+            {% if u.blockers %}<p class="small mb-0 text-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i>{{ u.blockers|truncatechars:80 }}</p>{% endif %}
+            <div class="d-flex gap-3 mt-1 small text-muted">
+              <span><i class="fa-regular fa-clock me-1"></i>{{ u.hours_worked }}h</span>
+              <span><i class="fa-solid fa-percent me-1"></i>{{ u.progress_percentage }}%</span>
+            </div>
+          </li>
+          {% empty %}
+          <li class="list-group-item text-center text-muted py-4">No work updates found.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+// Load projects on page load
+fetch('/api/projects/').then(r=>r.json()).then(data=>{
+  const sel = document.getElementById('wuProject');
+  const results = data.results || data;
+  results.forEach(p=>{ sel.innerHTML += `<option value="${p.id}">${p.name}</option>`; });
+});
+document.getElementById('wuProject').addEventListener('change', function() {
+  fetch(`/api/tasks/?project=${this.value}`).then(r=>r.json()).then(data=>{
+    const sel = document.getElementById('wuTask');
+    sel.innerHTML = '<option value="">— Select Task —</option>';
+    const results = data.results || data;
+    results.forEach(t=>{ sel.innerHTML += `<option value="${t.id}">${t.title}</option>`; });
+  });
+});
+function submitUpdate() {
+  const today = new Date().toISOString().split('T')[0];
+  const payload = {
+    date: today,
+    project: document.getElementById('wuProject').value,
+    task: document.getElementById('wuTask').value || null,
+    work_completed: document.getElementById('wuCompleted').value,
+    work_in_progress: document.getElementById('wuInProgress').value,
+    pending_work: document.getElementById('wuPending').value,
+    blockers: document.getElementById('wuBlockers').value,
+    hours_worked: document.getElementById('wuHours').value || 0,
+    progress_percentage: document.getElementById('wuProgress').value || 0,
+    remarks: document.getElementById('wuRemarks').value,
+  };
+  fetch('/api/work-updates/', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken':getCookie('csrftoken')},
+    body: JSON.stringify(payload)
+  }).then(r=>r.json()).then(d=>{
+    if(d.id) { showToast('Work update submitted!','success'); setTimeout(()=>location.reload(),1500); }
+    else { showToast(JSON.stringify(d),'danger'); }
+  });
+}
+</script>
+{% endblock %}

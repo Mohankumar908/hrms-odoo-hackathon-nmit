@@ -1,0 +1,67 @@
+{% extends "base/base.html" %}
+{% block title %}{{ action }} Project – DAYFLOW{% endblock %}
+{% block page_title %}{{ action }} Project{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h5 class="mb-0 fw-semibold">{{ action }} Project</h5>
+  <a href="{% url 'projects:project_list' %}" class="btn btn-sm btn-outline-secondary"><i class="fa-solid fa-arrow-left me-1"></i>Back</a>
+</div>
+<div class="row justify-content-center"><div class="col-lg-8">
+  <div class="card"><div class="card-body p-4">
+    <form method="post" novalidate>{% csrf_token %}
+      <div class="row g-3">
+        <div class="col-12">
+          <label class="form-label fw-semibold">Project Name <span class="text-danger">*</span></label>
+          <input type="text" name="name" class="form-control" required value="{% if project %}{{ project.name }}{% else %}{{ form_data.name }}{% endif %}">
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold">Description</label>
+          <textarea name="description" class="form-control" rows="3">{% if project %}{{ project.description }}{% else %}{{ form_data.description }}{% endif %}</textarea>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Client</label>
+          <input type="text" name="client" class="form-control" value="{% if project %}{{ project.client }}{% else %}{{ form_data.client }}{% endif %}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Status</label>
+          <select name="status" class="form-select">
+            {% for val, label in status_choices %}
+              <option value="{{ val }}" {% if project and project.status == val %}selected{% elif form_data.status == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Start Date <span class="text-danger">*</span></label>
+          <input type="date" name="start_date" class="form-control" required value="{% if project %}{{ project.start_date|date:'Y-m-d' }}{% else %}{{ form_data.start_date }}{% endif %}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">End Date</label>
+          <input type="date" name="end_date" class="form-control" value="{% if project and project.end_date %}{{ project.end_date|date:'Y-m-d' }}{% else %}{{ form_data.end_date }}{% endif %}">
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold">Project Manager</label>
+          <select name="project_manager" class="form-select">
+            <option value="">— None —</option>
+            {% for u in users %}<option value="{{ u.pk }}" {% if project and project.project_manager_id == u.pk %}selected{% endif %}>{% if u.employee_profile %}{{ u.employee_profile.full_name }}{% else %}{{ u.email }}{% endif %} ({{ u.get_role_display }})</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold">Team Members</label>
+          <select name="members" class="form-select" multiple size="6">
+            {% for u in users %}
+              <option value="{{ u.pk }}" {% if current_member_ids and u.pk|stringformat:"s" in current_member_ids %}selected{% endif %}>
+                {% if u.employee_profile %}{{ u.employee_profile.full_name }}{% else %}{{ u.email }}{% endif %}
+              </option>
+            {% endfor %}
+          </select>
+          <div class="form-text">Hold Ctrl/Cmd to select multiple.</div>
+        </div>
+      </div>
+      <div class="d-flex gap-2 justify-content-end mt-4">
+        <a href="{% url 'projects:project_list' %}" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk me-1"></i>{{ action }} Project</button>
+      </div>
+    </form>
+  </div></div>
+</div></div>
+{% endblock %}

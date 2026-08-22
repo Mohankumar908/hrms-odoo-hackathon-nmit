@@ -1,0 +1,98 @@
+{% extends 'base/base.html' %}
+{% block title %}Apply Leave – DAYFLOW{% endblock %}
+{% block page_title %}Apply for Leave{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h5 class="mb-0 fw-semibold">New Leave Request</h5>
+  <a href="{% url 'leave_management:leave_list' %}" class="btn btn-sm btn-outline-secondary">
+    <i class="fa-solid fa-arrow-left me-1"></i>Back
+  </a>
+</div>
+
+<div class="row justify-content-center">
+<div class="col-lg-6">
+<div class="card">
+  <div class="card-body p-4">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Leave Type <span class="text-danger">*</span></label>
+        <select name="leave_type" class="form-select" required>
+          <option value="">— Select Leave Type —</option>
+          {% for lt in leave_types %}
+            <option value="{{ lt.id }}"
+              {% if form_data.leave_type == lt.id|stringformat:"s" %}selected{% endif %}>
+              {{ lt.name }}
+              {% if lt.is_paid %}(Paid){% else %}(Unpaid){% endif %}
+              {% if lt.max_days_per_year %} · Max {{ lt.max_days_per_year }} days/yr{% endif %}
+            </option>
+          {% empty %}
+            <option disabled>No leave types configured</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Start Date <span class="text-danger">*</span></label>
+          <input type="date" name="start_date" class="form-control" required
+            id="startDate" value="{{ form_data.start_date }}"
+            min="{% now 'Y-m-d' %}" oninput="validateDates()">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">End Date <span class="text-danger">*</span></label>
+          <input type="date" name="end_date" class="form-control" required
+            id="endDate" value="{{ form_data.end_date }}"
+            min="{% now 'Y-m-d' %}" oninput="validateDates()">
+          <div class="invalid-feedback" id="dateError">End date cannot be before start date.</div>
+        </div>
+      </div>
+
+      <div id="dayCount" class="alert py-2 px-3 mb-3 small" style="display:none;background:#eef2ff;border:1px solid #c7d2fe;color:#4338ca">
+        <i class="fa-solid fa-calendar-days me-2"></i>
+        <span id="dayCountText"></span>
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label fw-semibold">Reason <span class="text-danger">*</span></label>
+        <textarea name="reason" class="form-control" rows="4" required
+          placeholder="Please explain the reason for your leave request…">{{ form_data.reason }}</textarea>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary px-4">
+          <i class="fa-solid fa-paper-plane me-1"></i>Submit Request
+        </button>
+        <a href="{% url 'leave_management:leave_list' %}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+</div>
+</div>
+
+<script>
+function validateDates() {
+  const s = document.getElementById('startDate').value;
+  const e = document.getElementById('endDate').value;
+  const countEl = document.getElementById('dayCount');
+  const countTxt = document.getElementById('dayCountText');
+  const endInput = document.getElementById('endDate');
+  if (s && e) {
+    const sd = new Date(s), ed = new Date(e);
+    if (ed < sd) {
+      endInput.classList.add('is-invalid');
+      document.getElementById('dateError').style.display = 'block';
+      countEl.style.display = 'none';
+    } else {
+      endInput.classList.remove('is-invalid');
+      document.getElementById('dateError').style.display = 'none';
+      const days = Math.round((ed - sd) / 86400000) + 1;
+      countTxt.textContent = days + ' day' + (days > 1 ? 's' : '') + ' requested';
+      countEl.style.display = 'block';
+    }
+  }
+}
+</script>
+{% endblock %}

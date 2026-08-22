@@ -1,0 +1,556 @@
+{% extends 'base/base.html' %}
+{% block title %}Sign In – DAYFLOW HRMS{% endblock %}
+
+{% block auth_content %}
+<div class="lp-wrap">
+
+  <!-- ── LEFT: Branding panel ─────────────────────────────────────────────── -->
+  <div class="lp-left">
+    <!-- Decorative rings -->
+    <div class="lp-ring lp-ring-1"></div>
+    <div class="lp-ring lp-ring-2"></div>
+    <div class="lp-ring lp-ring-3"></div>
+
+    <div class="lp-left-inner">
+      <!-- Logo -->
+      <div class="lp-logo">
+        <div class="lp-logo-icon">
+          <i class="fa-solid fa-circle-nodes"></i>
+        </div>
+        <span class="lp-logo-text">DAYFLOW</span>
+      </div>
+
+      <!-- Headline -->
+      <div class="lp-headline">
+        <h1>Manage your<br>team, smarter.</h1>
+        <p>All-in-one HR platform — attendance, leave, payroll, tasks and analytics in one place.</p>
+      </div>
+
+      <!-- Feature list -->
+      <ul class="lp-features">
+        <li><i class="fa-solid fa-circle-check"></i> Real-time attendance tracking</li>
+        <li><i class="fa-solid fa-circle-check"></i> Leave requests &amp; approvals</li>
+        <li><i class="fa-solid fa-circle-check"></i> Payroll &amp; salary management</li>
+        <li><i class="fa-solid fa-circle-check"></i> Projects, tasks &amp; work updates</li>
+        <li><i class="fa-solid fa-circle-check"></i> Analytics &amp; reporting</li>
+      </ul>
+
+      <p class="lp-copy">© {% now "Y" %} DAYFLOW HRMS</p>
+    </div>
+  </div>
+
+  <!-- ── RIGHT: Form panel ────────────────────────────────────────────────── -->
+  <div class="lp-right">
+    <div class="lp-card">
+
+      <!-- Header -->
+      <div class="lp-card-head">
+        <div class="lp-mobile-logo d-lg-none">
+          <i class="fa-solid fa-circle-nodes"></i> DAYFLOW
+        </div>
+        <h2>Welcome back</h2>
+        <p>Sign in to your workspace</p>
+      </div>
+
+      <!-- Role selector -->
+      <div class="lp-roles">
+        <button type="button" class="lp-role active" data-role="admin" onclick="pickRole('admin',this)">
+          <span class="lp-role-icon"><i class="fa-solid fa-shield-halved"></i></span>
+          <span class="lp-role-label">Admin</span>
+        </button>
+        <button type="button" class="lp-role" data-role="hr" onclick="pickRole('hr',this)">
+          <span class="lp-role-icon"><i class="fa-solid fa-people-roof"></i></span>
+          <span class="lp-role-label">HR</span>
+        </button>
+        <button type="button" class="lp-role" data-role="employee" onclick="pickRole('employee',this)">
+          <span class="lp-role-icon"><i class="fa-solid fa-user-tie"></i></span>
+          <span class="lp-role-label">Employee</span>
+        </button>
+      </div>
+
+      <!-- Role context pill -->
+      <div class="lp-ctx" id="lpCtx">
+        <i class="fa-solid fa-shield-halved" id="lpCtxIcon"></i>
+        <span id="lpCtxText">Signing in as <strong>Admin</strong></span>
+      </div>
+
+      <!-- Errors -->
+      {% if messages %}
+        {% for msg in messages %}
+          <div class="lp-err">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span>{{ msg }}</span>
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <!-- Form -->
+      <form method="post" action="{% url 'accounts:login' %}" id="lpForm" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="role" id="roleInput" value="admin">
+
+        <div class="lp-field">
+          <label for="lpEmail">Email Address</label>
+          <div class="lp-field-wrap">
+            <i class="fa-solid fa-envelope lp-fi"></i>
+            <input
+              type="email" name="email" id="lpEmail"
+              placeholder="you@company.com"
+              class="lp-input" required autofocus
+              value="{{ request.POST.email }}"
+            >
+          </div>
+        </div>
+
+        <div class="lp-field">
+          <div class="lp-field-header">
+            <label for="lpPwd">Password</label>
+            <a href="{% url 'accounts:forgot_password' %}" class="lp-forgot">Forgot password?</a>
+          </div>
+          <div class="lp-field-wrap">
+            <i class="fa-solid fa-lock lp-fi"></i>
+            <input
+              type="password" name="password" id="lpPwd"
+              placeholder="Enter your password"
+              class="lp-input" required
+            >
+            <button type="button" class="lp-eye" onclick="togglePwd()">
+              <i class="fa-solid fa-eye" id="eyeIcon"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="lp-btn" id="lpBtn">
+          <span id="lpBtnText"><i class="fa-solid fa-right-to-bracket"></i> Sign In</span>
+          <span id="lpBtnLoad" style="display:none">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83">
+                <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur=".65s" repeatCount="indefinite"/>
+              </path>
+            </svg>
+            Signing in…
+          </span>
+        </button>
+      </form>
+
+      <!-- Demo cred -->
+      <div class="lp-demo" onclick="fillDemo()">
+        <div class="lp-demo-left">
+          <div class="lp-demo-badge">Admin</div>
+          <div class="lp-demo-info">
+            <span>admin@dayflow.com</span>
+            <code>Admin@1234</code>
+          </div>
+        </div>
+        <div class="lp-demo-hint">
+          <i class="fa-solid fa-bolt"></i> Quick fill
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<style>
+/* ── Reset ──────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; }
+
+/* ── Layout ─────────────────────────────────────────────────────────────────── */
+.lp-wrap {
+  min-height: 100vh;
+  display: flex;
+}
+
+/* ── Left panel ─────────────────────────────────────────────────────────────── */
+.lp-left {
+  width: 480px;
+  flex-shrink: 0;
+  background: linear-gradient(155deg, #0f1f5c 0%, #1a3a8f 35%, #1565c0 65%, #1976d2 100%);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  padding: 56px 48px;
+}
+
+/* Decorative rings */
+.lp-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.07);
+}
+.lp-ring-1 { width: 560px; height: 560px; top: -200px; right: -200px; }
+.lp-ring-2 { width: 380px; height: 380px; top: -100px; right: -100px; border-color: rgba(255,255,255,.1); }
+.lp-ring-3 { width: 320px; height: 320px; bottom: -120px; left: -100px; }
+
+.lp-left-inner {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+}
+
+/* Logo */
+.lp-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 64px;
+}
+.lp-logo-icon {
+  width: 46px; height: 46px;
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.25);
+  border-radius: 13px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 1.3rem;
+  backdrop-filter: blur(4px);
+}
+.lp-logo-text {
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+
+/* Headline */
+.lp-headline { margin-bottom: 40px; }
+.lp-headline h1 {
+  color: #fff;
+  font-size: 2.4rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -.03em;
+  margin-bottom: 14px;
+}
+.lp-headline p {
+  color: rgba(255,255,255,.65);
+  font-size: .95rem;
+  line-height: 1.65;
+}
+
+/* Features */
+.lp-features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 56px;
+}
+.lp-features li {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  color: rgba(255,255,255,.75);
+  font-size: .875rem;
+}
+.lp-features li i {
+  color: #64b5f6;
+  font-size: .85rem;
+  flex-shrink: 0;
+}
+
+.lp-copy { color: rgba(255,255,255,.3); font-size: .72rem; }
+
+/* ── Right panel ─────────────────────────────────────────────────────────────── */
+.lp-right {
+  flex: 1;
+  background: #f0f4f8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+/* ── Card ────────────────────────────────────────────────────────────────────── */
+.lp-card {
+  width: 100%;
+  max-width: 430px;
+  background: #fff;
+  border-radius: 24px;
+  padding: 44px 40px 36px;
+  box-shadow:
+    0 2px 4px rgba(0,0,0,.04),
+    0 8px 32px rgba(21,101,192,.10),
+    0 24px 64px rgba(21,101,192,.07);
+  border: 1px solid rgba(21,101,192,.08);
+  animation: cardUp .45s cubic-bezier(.16,1,.3,1) both;
+}
+@keyframes cardUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Card head */
+.lp-card-head { margin-bottom: 28px; }
+.lp-mobile-logo {
+  font-size: 1.1rem; font-weight: 800;
+  color: #1565c0; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.lp-mobile-logo i { font-size: 1.4rem; }
+.lp-card-head h2 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #0d1f3c;
+  letter-spacing: -.03em;
+  margin-bottom: 4px;
+}
+.lp-card-head p { font-size: .875rem; color: #64748b; }
+
+/* ── Role selector ───────────────────────────────────────────────────────────── */
+.lp-roles {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  background: #f0f4f8;
+  padding: 5px;
+  border-radius: 14px;
+}
+.lp-role {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 10px 8px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all .18s ease;
+}
+.lp-role-icon {
+  width: 34px; height: 34px;
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(21,101,192,.08);
+  color: #64748b;
+  font-size: .95rem;
+  transition: all .18s;
+}
+.lp-role-label {
+  font-size: .73rem;
+  font-weight: 600;
+  color: #64748b;
+  transition: color .18s;
+}
+.lp-role:hover .lp-role-icon { background: rgba(21,101,192,.14); color: #1565c0; }
+.lp-role:hover .lp-role-label { color: #1565c0; }
+.lp-role.active .lp-role-icon {
+  background: #1565c0;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(21,101,192,.35);
+}
+.lp-role.active .lp-role-label { color: #1565c0; font-weight: 700; }
+.lp-role.active {
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+}
+
+/* ── Context pill ────────────────────────────────────────────────────────────── */
+.lp-ctx {
+  display: flex; align-items: center; gap: 9px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 9px;
+  padding: 9px 13px;
+  font-size: .82rem;
+  color: #1e40af;
+  margin-bottom: 20px;
+  transition: all .2s;
+}
+.lp-ctx i { font-size: .9rem; flex-shrink: 0; }
+
+/* ── Error ───────────────────────────────────────────────────────────────────── */
+.lp-err {
+  display: flex; align-items: center; gap: 9px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  color: #b91c1c;
+  padding: 10px 14px;
+  font-size: .84rem;
+  margin-bottom: 18px;
+  animation: fadeSlide .3s ease;
+}
+@keyframes fadeSlide { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
+
+/* ── Fields ──────────────────────────────────────────────────────────────────── */
+.lp-field { margin-bottom: 16px; }
+.lp-field label {
+  display: block;
+  font-size: .8rem; font-weight: 600;
+  color: #374151; margin-bottom: 6px;
+}
+.lp-field-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 6px;
+}
+.lp-field-header label { margin-bottom: 0; }
+.lp-forgot { font-size: .78rem; color: #1565c0; text-decoration: none; transition: color .15s; }
+.lp-forgot:hover { color: #0d47a1; text-decoration: underline; }
+
+.lp-field-wrap { position: relative; }
+.lp-fi {
+  position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+  color: #9ca3af; font-size: .82rem; pointer-events: none;
+  transition: color .18s;
+}
+.lp-input {
+  width: 100%;
+  padding: 12px 14px 12px 40px;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 11px;
+  font-size: .9rem;
+  font-family: 'Inter', sans-serif;
+  color: #1e293b;
+  outline: none;
+  transition: border-color .18s, box-shadow .18s, background .18s;
+}
+.lp-input::placeholder { color: #94a3b8; }
+.lp-input:hover:not(:focus) { border-color: #bfdbfe; }
+.lp-input:focus {
+  border-color: #1565c0;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(21,101,192,.12);
+}
+.lp-field-wrap:focus-within .lp-fi { color: #1565c0; }
+.lp-eye {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  border: none; background: none; color: #94a3b8;
+  cursor: pointer; padding: 5px; border-radius: 7px;
+  transition: color .15s, background .15s;
+}
+.lp-eye:hover { color: #1565c0; background: #eff6ff; }
+
+/* ── Submit button ───────────────────────────────────────────────────────────── */
+.lp-btn {
+  width: 100%;
+  margin-top: 8px;
+  padding: 13px;
+  background: linear-gradient(135deg, #1565c0 0%, #1976d2 50%, #1e88e5 100%);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: .92rem;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: .01em;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  transition: transform .18s, box-shadow .18s, opacity .18s;
+  position: relative; overflow: hidden;
+}
+.lp-btn::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: rgba(255,255,255,0);
+  transition: background .18s;
+}
+.lp-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(21,101,192,.42);
+}
+.lp-btn:hover::after { background: rgba(255,255,255,.08); }
+.lp-btn:active { transform: scale(.98); box-shadow: none; }
+
+/* ── Demo row ────────────────────────────────────────────────────────────────── */
+.lp-demo {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 20px;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all .18s;
+}
+.lp-demo:hover {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+.lp-demo-left { display: flex; align-items: center; gap: 12px; }
+.lp-demo-badge {
+  background: #dbeafe; color: #1e40af;
+  font-size: .7rem; font-weight: 700;
+  padding: 3px 9px; border-radius: 20px;
+  white-space: nowrap;
+}
+.lp-demo-info {
+  display: flex; flex-direction: column; gap: 1px;
+  font-size: .8rem; color: #374151;
+}
+.lp-demo-info code {
+  background: #e0f2fe; color: #0369a1;
+  padding: 1px 6px; border-radius: 4px;
+  font-size: .75rem; font-family: 'Courier New', monospace;
+}
+.lp-demo-hint {
+  font-size: .75rem; color: #64748b; font-weight: 600;
+  display: flex; align-items: center; gap: 5px;
+  white-space: nowrap;
+}
+.lp-demo-hint i { color: #f59e0b; }
+
+/* ── Responsive ──────────────────────────────────────────────────────────────── */
+@media (max-width: 1023px) {
+  .lp-left { display: none; }
+  .lp-right {
+    background: linear-gradient(155deg, #0f1f5c, #1565c0);
+    min-height: 100vh;
+  }
+  .lp-card {
+    box-shadow: 0 24px 64px rgba(0,0,0,.3);
+    border-color: rgba(255,255,255,.1);
+  }
+}
+@media (max-width: 480px) {
+  .lp-card { padding: 30px 22px 26px; border-radius: 18px; }
+  .lp-card-head h2 { font-size: 1.5rem; }
+  .lp-right { padding: 24px 16px; }
+}
+</style>
+
+<script>
+const ctxMap = {
+  admin:    { icon: 'fa-shield-halved', text: 'Signing in as <strong>Admin</strong> — full system access',         bg: '#eff6ff', bd: '#bfdbfe', color: '#1e40af' },
+  hr:       { icon: 'fa-people-roof',   text: 'Signing in as <strong>HR</strong> — people &amp; payroll access',   bg: '#f0fdf4', bd: '#bbf7d0', color: '#166534' },
+  employee: { icon: 'fa-user-tie',      text: 'Signing in as <strong>Employee</strong> — personal workspace',       bg: '#fffbeb', bd: '#fde68a', color: '#92400e' },
+};
+
+function pickRole(role, btn) {
+  document.querySelectorAll('.lp-role').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('roleInput').value = role;
+  const c = ctxMap[role];
+  const el = document.getElementById('lpCtx');
+  el.style.background  = c.bg;
+  el.style.borderColor = c.bd;
+  el.style.color       = c.color;
+  document.getElementById('lpCtxIcon').className = 'fa-solid ' + c.icon;
+  document.getElementById('lpCtxText').innerHTML = c.text;
+}
+
+function togglePwd() {
+  const f = document.getElementById('lpPwd');
+  const i = document.getElementById('eyeIcon');
+  f.type = f.type === 'password' ? 'text' : 'password';
+  i.className = 'fa-solid ' + (f.type === 'password' ? 'fa-eye' : 'fa-eye-slash');
+}
+
+function fillDemo() {
+  document.getElementById('lpEmail').value = 'admin@dayflow.com';
+  document.getElementById('lpPwd').value   = 'Admin@1234';
+  document.querySelectorAll('.lp-role').forEach(b => {
+    if (b.dataset.role === 'admin') pickRole('admin', b);
+  });
+  document.getElementById('lpEmail').focus();
+}
+
+document.getElementById('lpForm').addEventListener('submit', function () {
+  document.getElementById('lpBtnText').style.display = 'none';
+  document.getElementById('lpBtnLoad').style.display = 'inline-flex';
+  document.getElementById('lpBtn').style.opacity     = '.8';
+  document.getElementById('lpBtn').style.pointerEvents = 'none';
+});
+</script>
+{% endblock %}

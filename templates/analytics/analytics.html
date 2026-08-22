@@ -1,0 +1,242 @@
+{% extends "base/base.html" %}
+{% block title %}Analytics – DAYFLOW{% endblock %}
+{% block page_title %}Analytics{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h5 class="mb-0 fw-semibold">
+    Analytics
+    <span class="badge bg-primary-subtle text-primary ms-2" style="font-size:.75rem">{{ month_label }}</span>
+  </h5>
+</div>
+
+<!-- KPI row -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card kpi-card">
+      <div class="card-body">
+        <div class="kpi-icon bg-primary-subtle text-primary"><i class="fa-solid fa-users"></i></div>
+        <div class="kpi-value">{{ total_emp }}</div>
+        <div class="kpi-label">Active Employees</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card kpi-card">
+      <div class="card-body">
+        <div class="kpi-icon bg-success-subtle text-success"><i class="fa-solid fa-diagram-project"></i></div>
+        <div class="kpi-value">{{ active_projects }}</div>
+        <div class="kpi-label">Active Projects</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card kpi-card">
+      <div class="card-body">
+        <div class="kpi-icon bg-warning-subtle text-warning"><i class="fa-solid fa-calendar-xmark"></i></div>
+        <div class="kpi-value">{{ pending_leaves }}</div>
+        <div class="kpi-label">Pending Leaves</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card kpi-card">
+      <div class="card-body">
+        <div class="kpi-icon bg-info-subtle text-info"><i class="fa-solid fa-clock"></i></div>
+        <div class="kpi-value">{{ avg_hours }}h</div>
+        <div class="kpi-label">Avg Hours/Day</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+
+  <!-- Attendance 30-day trend (line chart from API) -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header fw-semibold d-flex justify-content-between">
+        <span><i class="fa-solid fa-chart-line me-2 text-primary"></i>30-Day Attendance Trend</span>
+        <span class="text-muted small" id="trendStatus">Loading…</span>
+      </div>
+      <div class="card-body"><canvas id="trendChart" style="max-height:200px"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Attendance this month donut -->
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">Attendance This Month</div>
+      <div class="card-body d-flex align-items-center justify-content-center">
+        <canvas id="attChart" style="max-height:220px"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Employees by dept bar -->
+  <div class="col-md-8">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">Employees by Department</div>
+      <div class="card-body"><canvas id="deptChart" style="max-height:220px"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Task status -->
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">Task Status</div>
+      <div class="card-body d-flex align-items-center justify-content-center">
+        <canvas id="taskChart" style="max-height:220px"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Project status -->
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">Project Status</div>
+      <div class="card-body d-flex align-items-center justify-content-center">
+        <canvas id="projChart" style="max-height:220px"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Task priority -->
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">Task Priority</div>
+      <div class="card-body d-flex align-items-center justify-content-center">
+        <canvas id="prioChart" style="max-height:220px"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Workload risk (from API) -->
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">
+        <i class="fa-solid fa-triangle-exclamation me-2 text-warning"></i>Workload Risk Analysis
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" id="workloadTable">
+            <thead class="table-light">
+              <tr><th>Employee</th><th>Active Tasks</th><th>Risk</th></tr>
+            </thead>
+            <tbody id="workloadBody">
+              <tr><td colspan="3" class="text-center text-muted py-3 small">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Project risk -->
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">
+        <i class="fa-solid fa-diagram-project me-2 text-danger"></i>Project Risk Analysis
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr><th>Project</th><th>Risk Score</th><th>Status</th></tr>
+            </thead>
+            <tbody id="projRiskBody">
+              <tr><td colspan="3" class="text-center text-muted py-3 small">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const COLORS = ['#6366f1','#06b6d4','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6'];
+
+function pie(id, labels, values, colors) {
+  new Chart(document.getElementById(id), {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 2, borderColor: '#fff' }] },
+    options: { plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 12 } } }, cutout: '58%' }
+  });
+}
+
+// ── Static context data ──────────────────────────────────────────────────────
+const deptData = {{ by_dept_json|safe }};
+const attData  = { present: {{ att_present }}, absent: {{ att_absent }}, leave: {{ att_leave }} };
+const taskData = {{ task_status|safe }};
+const projData = {{ proj_status|safe }};
+const prioData = {{ task_priority|safe }};
+
+pie('attChart', ['Present','Absent','On Leave'], [attData.present, attData.absent, attData.leave], ['#10b981','#ef4444','#f59e0b']);
+
+new Chart(document.getElementById('deptChart'), {
+  type: 'bar',
+  data: { labels: deptData.map(d => d.name), datasets: [{ label: 'Employees', data: deptData.map(d => d.count), backgroundColor: '#6366f1', borderRadius: 6 }] },
+  options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+});
+
+pie('taskChart', Object.keys(taskData).map(k => k.replace(/_/g,' ')), Object.values(taskData), COLORS);
+pie('projChart', Object.keys(projData).map(k => k.replace(/_/g,' ')), Object.values(projData), COLORS.slice(2));
+pie('prioChart', Object.keys(prioData), Object.values(prioData), ['#10b981','#f59e0b','#ef4444','#7c3aed']);
+
+// ── 30-day trend from API ─────────────────────────────────────────────────────
+fetch('/api/analytics/attendance-trend/')
+  .then(r => r.json())
+  .then(data => {
+    document.getElementById('trendStatus').textContent = 'Last 30 days';
+    new Chart(document.getElementById('trendChart'), {
+      type: 'line',
+      data: {
+        labels: data.map(d => d.date.slice(5)),
+        datasets: [
+          { label: 'Present', data: data.map(d => d.present), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.08)', tension: .4, fill: true, pointRadius: 2 },
+          { label: 'Absent',  data: data.map(d => d.absent),  borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,.06)',   tension: .4, fill: true, pointRadius: 2 },
+          { label: 'Leave',   data: data.map(d => d.leave),   borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,.06)',  tension: .4, fill: true, pointRadius: 2 },
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'top', labels: { font: { size: 11 } } } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } }, x: { ticks: { font: { size: 10 } } } }
+      }
+    });
+  })
+  .catch(() => { document.getElementById('trendStatus').textContent = 'Unavailable'; });
+
+// ── Workload risk from API ────────────────────────────────────────────────────
+fetch('/api/analytics/workload/')
+  .then(r => r.json())
+  .then(data => {
+    const rows = data.workload.slice(0, 8).map(w => {
+      const badge = w.risk === 'high'   ? '<span class="badge bg-danger-subtle text-danger">High</span>'
+                  : w.risk === 'medium' ? '<span class="badge bg-warning-subtle text-warning">Medium</span>'
+                  :                      '<span class="badge bg-success-subtle text-success">Normal</span>';
+      return `<tr><td style="font-size:.85rem">${w.email}</td><td class="fw-semibold">${w.active_tasks}</td><td>${badge}</td></tr>`;
+    }).join('') || '<tr><td colspan="3" class="text-center text-muted py-3 small">No data.</td></tr>';
+    document.getElementById('workloadBody').innerHTML = rows;
+  })
+  .catch(() => { document.getElementById('workloadBody').innerHTML = '<tr><td colspan="3" class="text-muted small text-center py-3">Unavailable</td></tr>'; });
+
+// ── Project risk from API ─────────────────────────────────────────────────────
+fetch('/api/analytics/project-risk/')
+  .then(r => r.json())
+  .then(data => {
+    const rows = (data.projects || []).slice(0, 8).map(p => {
+      const badge = p.risk === 'high'   ? '<span class="badge bg-danger-subtle text-danger">High Risk</span>'
+                  : p.risk === 'medium' ? '<span class="badge bg-warning-subtle text-warning">Medium</span>'
+                  :                      '<span class="badge bg-success-subtle text-success">Low</span>';
+      return `<tr><td style="font-size:.85rem" class="fw-semibold">${p.name}</td><td>${p.risk_score ?? '—'}</td><td>${badge}</td></tr>`;
+    }).join('') || '<tr><td colspan="3" class="text-center text-muted py-3 small">No data.</td></tr>';
+    document.getElementById('projRiskBody').innerHTML = rows;
+  })
+  .catch(() => { document.getElementById('projRiskBody').innerHTML = '<tr><td colspan="3" class="text-muted small text-center py-3">Unavailable</td></tr>'; });
+</script>
+{% endblock %}

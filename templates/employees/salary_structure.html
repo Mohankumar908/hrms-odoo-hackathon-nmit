@@ -1,0 +1,192 @@
+{% extends "base/base.html" %}
+{% block title %}Salary Structure – {{ profile.full_name }} – DAYFLOW{% endblock %}
+{% block page_title %}Salary Structure{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h5 class="mb-0 fw-semibold">{{ profile.full_name }}</h5>
+    <p class="text-muted small mb-0">{{ profile.user.employee_id }} · {{ profile.designation.title|default:"—" }}</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'employees:employee_edit' profile.pk %}" class="btn btn-sm btn-outline-secondary">
+      <i class="fa-solid fa-arrow-left me-1"></i>Back to Profile
+    </a>
+  </div>
+</div>
+
+<div class="row g-4">
+
+  <!-- Form -->
+  <div class="col-lg-8">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <!-- Earnings -->
+      <div class="card mb-4">
+        <div class="card-header fw-semibold">
+          <i class="fa-solid fa-arrow-trend-up me-2 text-success"></i>Earnings
+        </div>
+        <div class="card-body p-4">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Basic Salary <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text">₹</span>
+                <input type="number" name="basic_salary" class="form-control" step="0.01" min="0"
+                       value="{{ salary.basic_salary }}" required>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">House Allowance</label>
+              <div class="input-group">
+                <span class="input-group-text">₹</span>
+                <input type="number" name="house_allowance" class="form-control" step="0.01" min="0"
+                       value="{{ salary.house_allowance }}">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Transport Allowance</label>
+              <div class="input-group">
+                <span class="input-group-text">₹</span>
+                <input type="number" name="transport_allowance" class="form-control" step="0.01" min="0"
+                       value="{{ salary.transport_allowance }}">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Medical Allowance</label>
+              <div class="input-group">
+                <span class="input-group-text">₹</span>
+                <input type="number" name="medical_allowance" class="form-control" step="0.01" min="0"
+                       value="{{ salary.medical_allowance }}">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Other Allowances</label>
+              <div class="input-group">
+                <span class="input-group-text">₹</span>
+                <input type="number" name="other_allowances" class="form-control" step="0.01" min="0"
+                       value="{{ salary.other_allowances }}">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Effective From</label>
+              <input type="date" name="effective_from" class="form-control"
+                     value="{{ salary.effective_from|date:'Y-m-d' }}">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Deductions -->
+      <div class="card mb-4">
+        <div class="card-header fw-semibold">
+          <i class="fa-solid fa-arrow-trend-down me-2 text-danger"></i>Deductions
+        </div>
+        <div class="card-body p-4">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Tax Deduction (TDS)</label>
+              <div class="input-group">
+                <span class="input-group-text">₹</span>
+                <input type="number" name="tax_deduction" class="form-control" step="0.01" min="0"
+                       value="{{ salary.tax_deduction }}">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Provident Fund (PF)</label>
+              <div class="input-group">
+                <span class="input-group-text">₹</span>
+                <input type="number" name="provident_fund" class="form-control" step="0.01" min="0"
+                       value="{{ salary.provident_fund }}">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Other Deductions</label>
+              <div class="input-group">
+                <span class="input-group-text">₹</span>
+                <input type="number" name="other_deductions" class="form-control" step="0.01" min="0"
+                       value="{{ salary.other_deductions }}">
+              </div>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Notes</label>
+              <textarea name="notes" class="form-control" rows="2"
+                        placeholder="Any notes about this salary structure…">{{ salary.notes }}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2 justify-content-end">
+        <a href="{% url 'employees:employee_list' %}" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">
+          <i class="fa-solid fa-floppy-disk me-1"></i>Save Salary Structure
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Summary sidebar -->
+  <div class="col-lg-4">
+    <div class="card sticky-top" style="top:80px">
+      <div class="card-header fw-semibold">
+        <i class="fa-solid fa-calculator me-2 text-primary"></i>Salary Summary
+      </div>
+      <div class="card-body">
+
+        <div class="salary-row">
+          <span>Basic Salary</span>
+          <span>₹{{ salary.basic_salary|floatformat:0 }}</span>
+        </div>
+        <div class="salary-row text-success">
+          <span>Total Allowances</span>
+          <span>+₹{{ salary.total_allowances|floatformat:0 }}</span>
+        </div>
+        <hr class="my-2">
+        <div class="salary-row fw-semibold">
+          <span>Gross Salary</span>
+          <span>₹{{ salary.net_salary|add:salary.total_deductions|floatformat:0 }}</span>
+        </div>
+        <div class="salary-row text-danger">
+          <span>Total Deductions</span>
+          <span>-₹{{ salary.total_deductions|floatformat:0 }}</span>
+        </div>
+        <hr class="my-2">
+        <div class="salary-row fw-bold fs-5">
+          <span>Net Salary</span>
+          <span class="text-success">₹{{ salary.net_salary|floatformat:0 }}</span>
+        </div>
+
+        <div class="mt-3 pt-3 border-top">
+          <div class="text-muted small mb-2">Breakdown</div>
+          <div class="progress mb-1" style="height:8px">
+            <div class="progress-bar bg-success" style="width:{{ salary.basic_salary|floatformat:0 }}px;max-width:100%"
+                 title="Basic"></div>
+          </div>
+
+          <div class="d-flex justify-content-between small text-muted mt-2">
+            <span>House: ₹{{ salary.house_allowance|floatformat:0 }}</span>
+            <span>Transport: ₹{{ salary.transport_allowance|floatformat:0 }}</span>
+          </div>
+          <div class="d-flex justify-content-between small text-muted mt-1">
+            <span>Tax: ₹{{ salary.tax_deduction|floatformat:0 }}</span>
+            <span>PF: ₹{{ salary.provident_fund|floatformat:0 }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<style>
+.salary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-size: .875rem;
+}
+</style>
+{% endblock %}

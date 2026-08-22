@@ -1,0 +1,129 @@
+{% extends 'base/base.html' %}
+{% block title %}Projects – DAYFLOW{% endblock %}
+{% block page_title %}Projects{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h5 class="mb-0 fw-semibold">Projects
+    <span class="badge bg-primary-subtle text-primary ms-2" style="font-size:.75rem">{{ projects|length }}</span>
+  </h5>
+  {% if request.user.role == 'admin' or request.user.role == 'hr' %}
+  <a href="{% url 'projects:project_create' %}" class="btn btn-primary btn-sm">
+    <i class="fa-solid fa-plus me-1"></i>New Project
+  </a>
+  {% endif %}
+</div>
+
+<!-- Status filter -->
+<div class="d-flex gap-2 mb-4 flex-wrap">
+  <a href="{% url 'projects:project_list' %}" class="btn btn-sm {% if not filter_status %}btn-primary{% else %}btn-outline-secondary{% endif %}">All</a>
+  {% for val, label in status_choices %}
+  <a href="?status={{ val }}" class="btn btn-sm {% if filter_status == val %}btn-primary{% else %}btn-outline-secondary{% endif %}">{{ label }}</a>
+  {% endfor %}
+</div>
+
+{% if projects %}
+<div class="row g-4">
+  {% for p in projects %}
+  <div class="col-md-6 col-xl-4">
+    <div class="card h-100 project-card">
+      <div class="card-body">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <h6 class="fw-bold mb-0 me-2" style="font-size:.95rem">{{ p.name }}</h6>
+          {% if p.status == 'active' %}<span class="badge bg-success-subtle text-success">Active</span>
+          {% elif p.status == 'planning' %}<span class="badge bg-info-subtle text-info">Planning</span>
+          {% elif p.status == 'on_hold' %}<span class="badge bg-warning-subtle text-warning">On Hold</span>
+          {% elif p.status == 'completed' %}<span class="badge bg-primary-subtle text-primary">Completed</span>
+          {% elif p.status == 'delayed' %}<span class="badge bg-danger-subtle text-danger">Delayed</span>
+          {% elif p.status == 'cancelled' %}<span class="badge bg-secondary-subtle text-secondary">Cancelled</span>
+          {% endif %}
+        </div>
+
+        {% if p.description %}
+        <p class="text-muted small mb-3" style="line-height:1.5">{{ p.description|truncatechars:90 }}</p>
+        {% endif %}
+
+        <div class="row g-2 mb-3" style="font-size:.8rem">
+          <div class="col-6">
+            <span class="text-muted">Client</span>
+            <div class="fw-semibold">{{ p.client|default:"Internal" }}</div>
+          </div>
+          <div class="col-6">
+            <span class="text-muted">Manager</span>
+            <div class="fw-semibold">{{ p.project_manager.full_name|default:"—" }}</div>
+          </div>
+          <div class="col-6">
+            <span class="text-muted">Start</span>
+            <div class="fw-semibold">{{ p.start_date|date:"d M Y" }}</div>
+          </div>
+          <div class="col-6">
+            <span class="text-muted">Deadline</span>
+            <div class="fw-semibold">{{ p.end_date|date:"d M Y"|default:"Ongoing" }}</div>
+          </div>
+        </div>
+
+        <!-- Progress -->
+        <div class="d-flex justify-content-between align-items-center mb-1" style="font-size:.8rem">
+          <span class="text-muted">Progress</span>
+          <span class="fw-bold">{{ p.progress }}%</span>
+        </div>
+        <div class="progress mb-3" style="height:6px">
+          <div class="progress-bar {% if p.progress == 100 %}bg-success{% elif p.progress > 60 %}bg-primary{% elif p.progress > 30 %}bg-warning{% else %}bg-danger{% endif %}"
+               style="width:{{ p.progress }}%"></div>
+        </div>
+
+        <!-- Team avatars -->
+        <div class="d-flex align-items-center gap-1">
+          {% for m in p.memberships.all|slice:":5" %}
+          <div class="avatar bg-primary d-flex align-items-center justify-content-center text-white fw-bold"
+               style="width:26px;height:26px;border-radius:50%;font-size:.65rem;border:2px solid #fff"
+               title="{{ m.user.full_name }}">
+            {{ m.user.full_name|first|upper }}
+          </div>
+          {% endfor %}
+          {% if p.memberships.count > 5 %}
+          <span class="text-muted small ms-1">+{{ p.memberships.count|add:"-5" }}</span>
+          {% endif %}
+          <span class="text-muted small ms-auto">{{ p.tasks.count }} task{{ p.tasks.count|pluralize }}</span>
+        </div>
+      </div>
+
+      <div class="card-footer bg-transparent d-flex gap-2">
+        <a href="{% url 'projects:project_detail' p.pk %}" class="btn btn-sm btn-outline-primary flex-grow-1">
+          <i class="fa-solid fa-eye me-1"></i>View
+        </a>
+        {% if request.user.role == 'admin' or request.user.role == 'hr' %}
+        <a href="{% url 'projects:project_edit' p.pk %}" class="btn btn-sm btn-outline-secondary">
+          <i class="fa-solid fa-pen"></i>
+        </a>
+        {% if request.user.role == 'admin' %}
+        <a href="{% url 'projects:project_delete' p.pk %}" class="btn btn-sm btn-outline-danger">
+          <i class="fa-solid fa-trash"></i>
+        </a>
+        {% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card">
+  <div class="text-center py-5 text-muted">
+    <i class="fa-solid fa-diagram-project fa-2x mb-3 d-block opacity-25"></i>
+    <p class="mb-2">No projects found.</p>
+    {% if request.user.role == 'admin' or request.user.role == 'hr' %}
+    <a href="{% url 'projects:project_create' %}" class="btn btn-sm btn-primary">
+      <i class="fa-solid fa-plus me-1"></i>Create First Project
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<style>
+.project-card { transition: transform .18s, box-shadow .18s; }
+.project-card:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(79,70,229,.12); }
+</style>
+{% endblock %}

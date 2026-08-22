@@ -1,0 +1,154 @@
+{% extends 'base/base.html' %}
+{% block title %}Attendance – DAYFLOW{% endblock %}
+{% block page_title %}My Attendance{% endblock %}
+{% block content %}
+
+<div class="row g-4 mb-4">
+
+  <!-- Today card -->
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header fw-semibold d-flex align-items-center gap-2">
+        <i class="fa-solid fa-clock text-primary"></i> Today — {{ today|date:"d M Y" }}
+      </div>
+      <div class="card-body text-center py-4">
+
+        {% if today_att %}
+          {% if today_att.status == 'present' %}
+            <div class="status-circle bg-success-subtle text-success mx-auto mb-3">
+              <i class="fa-solid fa-circle-check fa-2x"></i>
+            </div>
+            <div class="fw-bold fs-5 text-success mb-3">Present</div>
+          {% elif today_att.status == 'absent' %}
+            <div class="status-circle bg-danger-subtle text-danger mx-auto mb-3">
+              <i class="fa-solid fa-circle-xmark fa-2x"></i>
+            </div>
+            <div class="fw-bold fs-5 text-danger mb-3">Absent</div>
+          {% elif today_att.status == 'leave' %}
+            <div class="status-circle bg-warning-subtle text-warning mx-auto mb-3">
+              <i class="fa-solid fa-umbrella-beach fa-2x"></i>
+            </div>
+            <div class="fw-bold fs-5 text-warning mb-3">On Leave</div>
+          {% else %}
+            <div class="status-circle bg-secondary-subtle text-secondary mx-auto mb-3">
+              <i class="fa-solid fa-clock fa-2x"></i>
+            </div>
+            <div class="fw-bold fs-5 mb-3">{{ today_att.status|title }}</div>
+          {% endif %}
+
+          <div class="row text-center mb-3">
+            <div class="col-6">
+              <div class="text-muted small mb-1">Check In</div>
+              <div class="fw-semibold">{{ today_att.check_in|time:"H:i"|default:"—" }}</div>
+            </div>
+            <div class="col-6">
+              <div class="text-muted small mb-1">Check Out</div>
+              <div class="fw-semibold">{{ today_att.check_out|time:"H:i"|default:"—" }}</div>
+            </div>
+          </div>
+          {% if today_att.working_hours %}
+            <div class="badge bg-primary-subtle text-primary mb-3">
+              <i class="fa-solid fa-hourglass-half me-1"></i>{{ today_att.working_hours }}h worked
+            </div>
+          {% endif %}
+          {% if today_att.is_late %}
+            <div class="badge bg-warning text-dark d-block mb-3">Late Check-in</div>
+          {% endif %}
+        {% else %}
+          <div class="status-circle bg-secondary-subtle text-secondary mx-auto mb-3">
+            <i class="fa-solid fa-clock fa-2x"></i>
+          </div>
+          <div class="text-muted mb-3">Not checked in yet today.</div>
+        {% endif %}
+
+        <!-- Check in/out buttons as real forms -->
+        <div class="d-flex gap-2 justify-content-center">
+          <form method="post" action="{% url 'attendance:checkin' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success btn-sm px-3"
+              {% if today_att and today_att.check_in %}disabled title="Already checked in"{% endif %}>
+              <i class="fa-solid fa-right-to-bracket me-1"></i>Check In
+            </button>
+          </form>
+          <form method="post" action="{% url 'attendance:checkout' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-warning btn-sm px-3"
+              {% if not today_att or not today_att.check_in or today_att.check_out %}disabled title="Check in first or already checked out"{% endif %}>
+              <i class="fa-solid fa-right-from-bracket me-1"></i>Check Out
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Monthly table -->
+  <div class="col-md-8">
+    <div class="card h-100">
+      <div class="card-header fw-semibold d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span><i class="fa-solid fa-calendar-days me-2 text-primary"></i>Monthly View</span>
+        <form method="get" class="d-flex gap-2 align-items-center">
+          <select name="month" class="form-select form-select-sm" style="width:120px">
+            {% for num, name in month_choices %}
+              <option value="{{ num }}" {% if num == month %}selected{% endif %}>{{ name }}</option>
+            {% endfor %}
+          </select>
+          <input type="number" name="year" class="form-control form-control-sm" value="{{ year }}" style="width:80px" min="2020" max="2030">
+          <button type="submit" class="btn btn-sm btn-primary">Go</button>
+        </form>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Date</th>
+                <th>Check In</th>
+                <th>Check Out</th>
+                <th>Hours</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for att in monthly %}
+              <tr>
+                <td>
+                  <span class="fw-semibold" style="font-size:.875rem">{{ att.date|date:"d M Y" }}</span>
+                  <span class="text-muted small ms-1">{{ att.date|date:"D" }}</span>
+                </td>
+                <td>{{ att.check_in|time:"H:i"|default:"—" }}</td>
+                <td>{{ att.check_out|time:"H:i"|default:"—" }}</td>
+                <td>
+                  {% if att.working_hours %}
+                    <span class="badge bg-primary-subtle text-primary">{{ att.working_hours }}h</span>
+                  {% else %}—{% endif %}
+                </td>
+                <td>
+                  {% if att.status == 'present' %}<span class="badge bg-success-subtle text-success">Present</span>
+                  {% elif att.status == 'absent' %}<span class="badge bg-danger-subtle text-danger">Absent</span>
+                  {% elif att.status == 'leave' %}<span class="badge bg-warning-subtle text-warning">Leave</span>
+                  {% elif att.status == 'half_day' %}<span class="badge bg-info-subtle text-info">Half Day</span>
+                  {% elif att.status == 'holiday' %}<span class="badge bg-secondary-subtle text-secondary">Holiday</span>
+                  {% else %}<span class="badge bg-secondary-subtle text-secondary">{{ att.status|title }}</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-center text-muted py-4">No records for this period.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.status-circle {
+  width: 72px; height: 72px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "base/base.html" %}
+{% block title %}{{ action }} Task – DAYFLOW{% endblock %}
+{% block page_title %}{{ action }} Task{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h5 class="mb-0 fw-semibold">{{ action }} Task</h5>
+  <a href="{% url 'tasks:task_list' %}" class="btn btn-sm btn-outline-secondary"><i class="fa-solid fa-arrow-left me-1"></i>Back</a>
+</div>
+<div class="row justify-content-center"><div class="col-lg-8">
+  <div class="card"><div class="card-body p-4">
+    <form method="post" novalidate>{% csrf_token %}
+      <div class="row g-3">
+        <div class="col-12">
+          <label class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+          <input type="text" name="title" class="form-control" required value="{% if task %}{{ task.title }}{% else %}{{ form_data.title }}{% endif %}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Project <span class="text-danger">*</span></label>
+          <select name="project" class="form-select" required>
+            <option value="">— Select Project —</option>
+            {% for p in projects %}<option value="{{ p.pk }}" {% if task and task.project_id == p.pk %}selected{% elif form_data.project == p.pk|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Priority</label>
+          <select name="priority" class="form-select">
+            {% for val,label in priority_choices %}<option value="{{ val }}" {% if task and task.priority == val %}selected{% elif form_data.priority == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Status</label>
+          <select name="status" class="form-select">
+            {% for val,label in status_choices %}<option value="{{ val }}" {% if task and task.status == val %}selected{% elif form_data.status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Deadline</label>
+          <input type="date" name="deadline" class="form-control" value="{% if task and task.deadline %}{{ task.deadline|date:'Y-m-d' }}{% endif %}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Estimated Hours</label>
+          <input type="number" name="estimated_hours" class="form-control" step="0.5" min="0" value="{% if task and task.estimated_hours %}{{ task.estimated_hours }}{% endif %}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Actual Hours</label>
+          <input type="number" name="actual_hours" class="form-control" step="0.5" min="0" value="{% if task and task.actual_hours %}{{ task.actual_hours }}{% endif %}">
+        </div>
+        {% if request.user.role in 'admin,hr' %}
+        <div class="col-12">
+          <label class="form-label fw-semibold">Assignees</label>
+          <select name="assignees" class="form-select" multiple size="5">
+            {% for u in users %}<option value="{{ u.pk }}" {% if current_assignee_ids and u.pk|stringformat:"s" in current_assignee_ids %}selected{% endif %}>{% if u.employee_profile %}{{ u.employee_profile.full_name }}{% else %}{{ u.email }}{% endif %}</option>{% endfor %}
+          </select>
+          <div class="form-text">Hold Ctrl/Cmd to select multiple.</div>
+        </div>
+        {% endif %}
+        <div class="col-12">
+          <label class="form-label fw-semibold">Progress: <span id="progVal">{% if task %}{{ task.progress }}{% else %}0{% endif %}%</span></label>
+          <input type="range" name="progress" class="form-range" min="0" max="100" step="5"
+            value="{% if task %}{{ task.progress }}{% else %}0{% endif %}"
+            oninput="document.getElementById('progVal').textContent=this.value+'%'">
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold">Description</label>
+          <textarea name="description" class="form-control" rows="3">{% if task %}{{ task.description }}{% else %}{{ form_data.description }}{% endif %}</textarea>
+        </div>
+      </div>
+      <div class="d-flex gap-2 justify-content-end mt-4">
+        <a href="{% url 'tasks:task_list' %}" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk me-1"></i>{{ action }} Task</button>
+      </div>
+    </form>
+  </div></div>
+</div></div>
+{% endblock %}

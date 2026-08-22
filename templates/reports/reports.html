@@ -1,0 +1,110 @@
+{% extends 'base/base.html' %}
+{% block title %}Reports - DAYFLOW{% endblock %}
+{% block page_title %}Reports{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header"><i class="fa-solid fa-clock me-2"></i>Attendance Report</div>
+      <div class="card-body">
+        <div class="mb-3 row g-2">
+          <div class="col"><label class="form-label small">Month</label><input type="number" id="attMonth" class="form-control" min="1" max="12" value="{{ now|date:'n' }}"></div>
+          <div class="col"><label class="form-label small">Year</label><input type="number" id="attYear" class="form-control" value="{{ now|date:'Y' }}"></div>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-primary btn-sm" onclick="viewReport('attendance')">View</button>
+          <a id="attCsvBtn" class="btn btn-success btn-sm"><i class="fa-solid fa-file-csv me-1"></i>Export CSV</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header"><i class="fa-solid fa-money-bill me-2"></i>Payroll Report</div>
+      <div class="card-body">
+        <div class="mb-3 row g-2">
+          <div class="col"><label class="form-label small">Month</label><input type="number" id="payMonth" class="form-control" min="1" max="12" value="{{ now|date:'n' }}"></div>
+          <div class="col"><label class="form-label small">Year</label><input type="number" id="payYear" class="form-control" value="{{ now|date:'Y' }}"></div>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-primary btn-sm" onclick="viewReport('payroll')">View</button>
+          <a id="payCsvBtn" class="btn btn-success btn-sm"><i class="fa-solid fa-file-csv me-1"></i>Export CSV</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header"><i class="fa-solid fa-calendar-xmark me-2"></i>Leave Report</div>
+      <div class="card-body">
+        <select class="form-select mb-3" id="leaveStatus">
+          <option value="">All</option><option value="pending">Pending</option>
+          <option value="approved">Approved</option><option value="rejected">Rejected</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="viewReport('leave')">View Report</button>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header"><i class="fa-solid fa-list-check me-2"></i>Task Report</div>
+      <div class="card-body">
+        <select class="form-select mb-3" id="taskStatus">
+          <option value="">All</option><option value="completed">Completed</option>
+          <option value="in_progress">In Progress</option><option value="delayed">Delayed</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="viewReport('tasks')">View Report</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mt-4" id="reportResults" style="display:none">
+  <div class="card-header" id="reportTitle">Results</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-clean mb-0">
+        <thead id="reportHead"></thead>
+        <tbody id="reportBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function viewReport(type) {
+  let url, head, row;
+  if (type==='attendance') {
+    const m=document.getElementById('attMonth').value, y=document.getElementById('attYear').value;
+    url=`/api/reports/attendance/?month=${m}&year=${y}`;
+    document.getElementById('attCsvBtn').href=`/api/reports/attendance/?month=${m}&year=${y}&format=csv`;
+    head='<tr><th>Employee</th><th>Date</th><th>Check In</th><th>Check Out</th><th>Status</th><th>Hours</th></tr>';
+    row=d=>`<tr><td>${d.employee_name}</td><td>${d.date}</td><td>${d.check_in||'—'}</td><td>${d.check_out||'—'}</td><td>${d.status}</td><td>${d.working_hours}</td></tr>`;
+  } else if (type==='payroll') {
+    const m=document.getElementById('payMonth').value, y=document.getElementById('payYear').value;
+    url=`/api/reports/payroll/?month=${m}&year=${y}`;
+    document.getElementById('payCsvBtn').href=`/api/reports/payroll/?month=${m}&year=${y}&format=csv`;
+    head='<tr><th>Employee</th><th>Month</th><th>Gross</th><th>Deductions</th><th>Net</th><th>Status</th></tr>';
+    row=d=>`<tr><td>${d.employee_name}</td><td>${d.month}/${d.year}</td><td>${d.gross_salary}</td><td>${d.total_deductions}</td><td><strong>${d.net_salary}</strong></td><td>${d.status}</td></tr>`;
+  } else if (type==='leave') {
+    const s=document.getElementById('leaveStatus').value;
+    url=`/api/reports/leave/?status=${s}`;
+    head='<tr><th>Employee</th><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Status</th></tr>';
+    row=d=>`<tr><td>${d.employee_name}</td><td>${d.leave_type_name}</td><td>${d.start_date}</td><td>${d.end_date}</td><td>${d.total_days}</td><td>${d.status}</td></tr>`;
+  } else {
+    const s=document.getElementById('taskStatus').value;
+    url=`/api/reports/tasks/?status=${s}`;
+    head='<tr><th>Task</th><th>Project</th><th>Status</th><th>Priority</th><th>Deadline</th></tr>';
+    row=d=>`<tr><td>${d.title}</td><td>${d.project_name}</td><td>${d.status}</td><td>${d.priority}</td><td>${d.deadline||'—'}</td></tr>`;
+  }
+  fetch(url).then(r=>r.json()).then(data=>{
+    const results = data.results || data;
+    document.getElementById('reportHead').innerHTML = head;
+    document.getElementById('reportBody').innerHTML = results.map(row).join('') || '<tr><td colspan="6" class="text-center text-muted py-3">No data.</td></tr>';
+    document.getElementById('reportResults').style.display='';
+    document.getElementById('reportTitle').textContent=`${type.charAt(0).toUpperCase()+type.slice(1)} Report — ${results.length} records`;
+  });
+}
+</script>
+{% endblock %}

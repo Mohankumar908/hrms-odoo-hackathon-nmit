@@ -1,0 +1,182 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ task.title }} – DAYFLOW{% endblock %}
+{% block page_title %}Task Detail{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h5 class="mb-0 fw-semibold">{{ task.title }}</h5>
+  <div class="d-flex gap-2">
+    <a href="{% url 'tasks:task_edit' task.pk %}" class="btn btn-sm btn-outline-primary">
+      <i class="fa-solid fa-pen me-1"></i>Edit
+    </a>
+    {% if request.user.role == 'admin' or request.user.role == 'hr' %}
+    <a href="{% url 'tasks:task_delete' task.pk %}" class="btn btn-sm btn-outline-danger">
+      <i class="fa-solid fa-trash me-1"></i>Delete
+    </a>
+    {% endif %}
+    <a href="{% url 'tasks:task_list' %}" class="btn btn-sm btn-outline-secondary">
+      <i class="fa-solid fa-arrow-left me-1"></i>Back
+    </a>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Left sidebar -->
+  <div class="col-lg-4">
+
+    <!-- Info card -->
+    <div class="card mb-4">
+      <div class="card-header fw-semibold">Task Info</div>
+      <div class="card-body">
+        <!-- Status -->
+        <div class="mb-3 text-center">
+          {% if task.status == 'completed' %}<span class="badge bg-success fs-6 px-3 py-2">Completed</span>
+          {% elif task.status == 'in_progress' %}<span class="badge bg-primary fs-6 px-3 py-2">In Progress</span>
+          {% elif task.status == 'delayed' %}<span class="badge bg-danger fs-6 px-3 py-2">Delayed</span>
+          {% elif task.status == 'on_hold' %}<span class="badge bg-warning text-dark fs-6 px-3 py-2">On Hold</span>
+          {% else %}<span class="badge bg-secondary fs-6 px-3 py-2">Not Started</span>
+          {% endif %}
+        </div>
+
+        <!-- Progress -->
+        <div class="mb-3">
+          <div class="d-flex justify-content-between small mb-1">
+            <span class="text-muted">Progress</span>
+            <span class="fw-bold">{{ task.progress }}%</span>
+          </div>
+          <div class="progress" style="height:8px">
+            <div class="progress-bar bg-primary" style="width:{{ task.progress }}%"></div>
+          </div>
+        </div>
+
+        <dl class="row small mb-0">
+          <dt class="col-5 text-muted">Project</dt>
+          <dd class="col-7"><a href="{% url 'projects:project_detail' task.project.pk %}">{{ task.project.name }}</a></dd>
+
+          <dt class="col-5 text-muted">Priority</dt>
+          <dd class="col-7">
+            {% if task.priority == 'critical' %}<span class="badge bg-danger">Critical</span>
+            {% elif task.priority == 'high' %}<span class="badge bg-warning text-dark">High</span>
+            {% elif task.priority == 'medium' %}<span class="badge bg-info text-white">Medium</span>
+            {% else %}<span class="badge bg-secondary">Low</span>{% endif %}
+          </dd>
+
+          <dt class="col-5 text-muted">Deadline</dt>
+          <dd class="col-7">{{ task.deadline|date:"d M Y"|default:"—" }}</dd>
+
+          <dt class="col-5 text-muted">Est. Hours</dt>
+          <dd class="col-7">{{ task.estimated_hours|default:"—" }}</dd>
+
+          <dt class="col-5 text-muted">Actual Hours</dt>
+          <dd class="col-7">{{ task.actual_hours|default:"—" }}</dd>
+
+          <dt class="col-5 text-muted">Created by</dt>
+          <dd class="col-7">{{ task.created_by.full_name|default:"—" }}</dd>
+        </dl>
+
+        <hr>
+        <div class="small text-muted mb-2">Assignees</div>
+        <div class="d-flex flex-wrap gap-1">
+          {% for a in task.assignees.all %}
+            <span class="badge bg-primary-subtle text-primary">{{ a.full_name }}</span>
+          {% empty %}
+            <span class="text-muted small">Unassigned</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick update -->
+    <div class="card">
+      <div class="card-header fw-semibold">Quick Update</div>
+      <div class="card-body">
+        <form method="post" action="{% url 'tasks:task_edit' task.pk %}">
+          {% csrf_token %}
+          <label class="form-label small fw-semibold">
+            Progress: <span id="progDisplay">{{ task.progress }}%</span>
+          </label>
+          <input type="range" name="progress" class="form-range mb-2" min="0" max="100" step="5"
+            value="{{ task.progress }}" oninput="document.getElementById('progDisplay').textContent=this.value+'%'">
+
+          <label class="form-label small fw-semibold">Status</label>
+          <select name="status" class="form-select form-select-sm mb-3">
+            {% for val, label in task.STATUS_CHOICES %}
+              <option value="{{ val }}" {% if task.status == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+
+          <!-- hidden required fields -->
+          <input type="hidden" name="title" value="{{ task.title }}">
+          <input type="hidden" name="project" value="{{ task.project_id }}">
+
+          <button type="submit" class="btn btn-primary btn-sm w-100">
+            <i class="fa-solid fa-floppy-disk me-1"></i>Save Update
+          </button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Right: description + comments -->
+  <div class="col-lg-8">
+
+    {% if task.description %}
+    <div class="card mb-4">
+      <div class="card-header fw-semibold">Description</div>
+      <div class="card-body">
+        <p class="mb-0" style="white-space:pre-wrap;font-size:.9rem">{{ task.description }}</p>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Comments -->
+    <div class="card">
+      <div class="card-header fw-semibold d-flex align-items-center gap-2">
+        <i class="fa-solid fa-comments text-primary"></i>
+        Comments <span class="badge bg-secondary ms-1">{{ task.comments.count }}</span>
+      </div>
+      <div class="card-body">
+        {% for c in task.comments.all %}
+        <div class="comment-item mb-3 p-3 rounded" style="background:#f8fafc;border:1px solid #e2e8f0">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="d-flex align-items-center gap-2">
+              <div class="avatar bg-primary d-flex align-items-center justify-content-center text-white fw-bold" style="font-size:.7rem;width:28px;height:28px;border-radius:50%">
+                {{ c.author.full_name|first|upper }}
+              </div>
+              <span class="fw-semibold small">{{ c.author.full_name }}</span>
+            </div>
+            <span class="text-muted" style="font-size:.75rem">{{ c.created_at|timesince }} ago</span>
+          </div>
+          <p class="mb-1 small">{{ c.content }}</p>
+          {% if c.is_blocker %}
+            <span class="badge bg-danger-subtle text-danger">
+              <i class="fa-solid fa-triangle-exclamation me-1"></i>Blocker
+            </span>
+          {% endif %}
+        </div>
+        {% empty %}
+        <p class="text-muted small text-center py-2">No comments yet. Be the first.</p>
+        {% endfor %}
+
+        <hr>
+        <form method="post" action="{% url 'tasks:task_detail' task.pk %}">
+          {% csrf_token %}
+          <label class="form-label small fw-semibold">Add Comment</label>
+          <textarea name="content" class="form-control mb-2" rows="3" placeholder="Write a comment…" required></textarea>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" name="is_blocker" id="isBlocker">
+            <label class="form-check-label small" for="isBlocker">
+              <i class="fa-solid fa-triangle-exclamation text-danger me-1"></i>Mark as blocker
+            </label>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="fa-solid fa-paper-plane me-1"></i>Post Comment
+          </button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

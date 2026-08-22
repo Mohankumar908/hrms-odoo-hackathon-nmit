@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}DAYFLOW HRMS{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  {% load static %}
+  <link href="{% static 'css/dayflow.css' %}" rel="stylesheet">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+{% if user.is_authenticated %}
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <h4><i class="fa-solid fa-circle-nodes me-2"></i>DAYFLOW</h4>
+    <small>Every workday, perfectly aligned.</small>
+  </div>
+  <div class="sidebar-nav">
+
+    {% if user.role == 'admin' or user.role == 'hr' %}
+    <div class="nav-section">Overview</div>
+    <a href="{% url 'employees:admin_dashboard' %}">
+      <i class="fa-solid fa-gauge"></i> Dashboard
+    </a>
+
+    {% if user.role == 'admin' %}
+    <div class="nav-section">User Management</div>
+    <a href="{% url 'employees:employee_create' %}">
+      <i class="fa-solid fa-user-plus"></i> Create Employee
+    </a>
+    <a href="{% url 'employees:hr_create' %}">
+      <i class="fa-solid fa-user-shield"></i> Create HR
+    </a>
+    <a href="{% url 'employees:employee_list' %}">
+      <i class="fa-solid fa-users"></i> Employee List
+    </a>
+    <a href="{% url 'employees:hr_list' %}">
+      <i class="fa-solid fa-people-roof"></i> HR List
+    </a>
+    {% else %}
+    <div class="nav-section">Employee Management</div>
+    <a href="{% url 'employees:employee_create' %}">
+      <i class="fa-solid fa-user-plus"></i> Create Employee
+    </a>
+    <a href="{% url 'employees:employee_list' %}">
+      <i class="fa-solid fa-users"></i> Employee List
+    </a>
+    {% endif %}
+    <div class="nav-section">Leave Management</div>
+    <a href="{% url 'leave_management:leave_list' %}">
+      <i class="fa-solid fa-calendar-xmark"></i> Leave Requests
+    </a>
+    <a href="{% url 'leave_management:leave_types' %}">
+      <i class="fa-solid fa-tags"></i> Leave Types
+    </a>
+
+    <div class="nav-section">Workforce</div>
+    <a href="{% url 'attendance:admin_attendance' %}">
+      <i class="fa-solid fa-clock"></i> Attendance
+    </a>
+    <a href="{% url 'payroll:payroll' %}">
+      <i class="fa-solid fa-money-bill-wave"></i> Payroll
+    </a>
+
+    <div class="nav-section">Work</div>
+    <a href="{% url 'projects:project_list' %}">
+      <i class="fa-solid fa-diagram-project"></i> Projects
+    </a>
+    <a href="{% url 'tasks:task_list' %}">
+      <i class="fa-solid fa-list-check"></i> Tasks
+    </a>
+    <a href="{% url 'work_updates:list' %}">
+      <i class="fa-solid fa-pen-to-square"></i> Work Updates
+    </a>
+
+    <div class="nav-section">Insights</div>
+    <a href="{% url 'analytics:dashboard' %}">
+      <i class="fa-solid fa-chart-bar"></i> Analytics
+    </a>
+    <a href="{% url 'reports:dashboard' %}">
+      <i class="fa-solid fa-file-lines"></i> Reports
+    </a>
+
+    {% else %}
+    <div class="nav-section">My Space</div>
+    <a href="{% url 'employees:employee_dashboard' %}">
+      <i class="fa-solid fa-gauge"></i> Dashboard
+    </a>
+    <a href="{% url 'employees:profile' %}">
+      <i class="fa-solid fa-user"></i> My Profile
+    </a>
+    <a href="{% url 'attendance:attendance' %}">
+      <i class="fa-solid fa-clock"></i> Attendance
+    </a>
+    <a href="{% url 'leave_management:leave_list' %}">
+      <i class="fa-solid fa-calendar-xmark"></i> Leave
+    </a>
+    <a href="{% url 'payroll:payroll' %}">
+      <i class="fa-solid fa-money-bill-wave"></i> Salary
+    </a>
+    <a href="{% url 'tasks:task_list' %}">
+      <i class="fa-solid fa-list-check"></i> My Tasks
+    </a>
+    <a href="{% url 'work_updates:list' %}">
+      <i class="fa-solid fa-pen-to-square"></i> Work Updates
+    </a>
+    {% endif %}
+
+    <div class="nav-section">Account</div>
+    <a href="{% url 'notifications:list' %}" class="notif-dot">
+      <i class="fa-solid fa-bell"></i> Notifications
+      {% if unread_notifications_count > 0 %}<span>{{ unread_notifications_count }}</span>{% endif %}
+    </a>
+    <a href="{% url 'accounts:logout' %}">
+      <i class="fa-solid fa-right-from-bracket"></i> Logout
+    </a>
+  </div>
+</nav>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="topbar-left">
+    <button class="btn btn-sm btn-outline-secondary d-md-none" id="sidebarToggle">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+    <span class="fw-semibold text-muted fs-6">{% block page_title %}{% endblock %}</span>
+  </div>
+  <div class="topbar-right">
+    <a href="{% url 'notifications:list' %}" class="btn btn-sm btn-outline-secondary position-relative">
+      <i class="fa-solid fa-bell"></i>
+      {% if unread_notifications_count > 0 %}
+      <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:.6rem">
+        {{ unread_notifications_count }}
+      </span>
+      {% endif %}
+    </a>
+    <div class="d-flex align-items-center gap-2">
+      {% if user.employee_profile.profile_picture %}
+        <img src="{{ user.employee_profile.profile_picture.url }}" class="avatar" alt="">
+      {% else %}
+        <div class="avatar bg-primary d-flex align-items-center justify-content-center text-white fw-bold">
+          {{ user.email|first|upper }}
+        </div>
+      {% endif %}
+      <div>
+        <div class="fw-semibold fs-sm" style="font-size:.85rem">{{ user.full_name }}</div>
+        <div class="text-muted" style="font-size:.72rem">{{ user.get_role_display }}</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="main-content">
+  {% if messages %}
+    {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags }} alert-dismissible alert-auto-dismiss mb-3" role="alert">
+      {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endif %}
+  {% block content %}{% endblock %}
+</main>
+
+{% else %}
+{% block auth_content %}{% endblock %}
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% load static %}
+<script src="{% static 'js/dayflow.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>
